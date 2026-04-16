@@ -1,4 +1,4 @@
--- ExplainIoT — TimescaleDB schema
+-- TRACE — TimescaleDB schema
 -- Executed automatically on first container start via docker-entrypoint-initdb.d
 
 CREATE EXTENSION IF NOT EXISTS timescaledb;

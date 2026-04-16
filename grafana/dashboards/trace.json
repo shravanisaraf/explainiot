@@ -4,7 +4,7 @@
     { "type": "datasource", "id": "postgres", "name": "PostgreSQL", "version": "1.0.0" }
   ],
   "annotations": { "list": [] },
-  "description": "ExplainIoT — Real-time IIoT Anomaly Detection with LLM Explanations",
+  "description": "TRACE — Real-time IIoT Anomaly Detection with LLM Explanations",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -278,7 +278,7 @@
   "time": { "from": "now-30m", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "ExplainIoT — Real-time IIoT Anomaly Detection",
-  "uid": "explainiot-main",
+  "title": "TRACE — Real-time IIoT Anomaly Detection",
+  "uid": "trace-main",
   "version": 1
 }

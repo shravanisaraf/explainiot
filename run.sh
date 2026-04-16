@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# ExplainIoT — single-command launcher
+# TRACE — single-command launcher
 # Starts all infrastructure, waits for readiness, then runs the pipeline.
 #
 # Usage:
@@ -16,9 +16,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; NC='\033[0m'
-info()  { echo -e "${GREEN}[explainiot]${NC} $*"; }
-warn()  { echo -e "${YELLOW}[explainiot]${NC} $*"; }
-error() { echo -e "${RED}[explainiot]${NC} $*" >&2; }
+info()  { echo -e "${GREEN}[trace]${NC} $*"; }
+warn()  { echo -e "${YELLOW}[trace]${NC} $*"; }
+error() { echo -e "${RED}[trace]${NC} $*" >&2; }
 
 # ── Env ───────────────────────────────────────────────────────────────────────
 if [[ ! -f .env ]]; then
@@ -62,7 +62,7 @@ docker compose up -d redpanda timescaledb grafana
 # ── Wait for TimescaleDB ──────────────────────────────────────────────────────
 info "Waiting for TimescaleDB..."
 for i in $(seq 1 30); do
-    if docker exec explainiot_tsdb pg_isready -U explainiot -d explainiot -q 2>/dev/null; then
+    if docker exec trace_tsdb pg_isready -U trace -d trace -q 2>/dev/null; then
         info "TimescaleDB ready."
         break
     fi
@@ -73,7 +73,7 @@ done
 # ── Wait for Redpanda ─────────────────────────────────────────────────────────
 info "Waiting for Redpanda..."
 for i in $(seq 1 30); do
-    if docker exec explainiot_redpanda rpk cluster health 2>/dev/null | grep -q "Healthy:.*true"; then
+    if docker exec trace_redpanda rpk cluster health 2>/dev/null | grep -q "Healthy:.*true"; then
         info "Redpanda ready."
         break
     fi
@@ -91,9 +91,9 @@ fi
 # ── Print URLs ────────────────────────────────────────────────────────────────
 echo ""
 info "Infrastructure ready."
-echo "  Grafana        →  http://localhost:3000   (admin / explainiot)"
+echo "  Grafana        →  http://localhost:3000   (admin / trace)"
 echo "  Redpanda UI    →  http://localhost:8080"
-echo "  TimescaleDB    →  localhost:5432  (psql -U explainiot -d explainiot)"
+echo "  TimescaleDB    →  localhost:5432  (psql -U trace -d trace)"
 echo ""
 
 if [[ "$MODE" == "all" || "$MODE" == "producer" ]]; then

@@ -2,7 +2,7 @@ services:
   # ── Redpanda (Kafka-compatible, single-binary, no ZooKeeper) ────────────────
   redpanda:
     image: redpandadata/redpanda:v23.3.11
-    container_name: explainiot_redpanda
+    container_name: trace_redpanda
     command:
       - redpanda
       - start
@@ -27,7 +27,7 @@ services:
 
   redpanda-console:
     image: redpandadata/console:v2.4.3
-    container_name: explainiot_console
+    container_name: trace_console
     ports:
       - "8080:8080"
     environment:
@@ -39,18 +39,18 @@ services:
   # ── TimescaleDB ─────────────────────────────────────────────────────────────
   timescaledb:
     image: timescale/timescaledb:latest-pg15
-    container_name: explainiot_tsdb
+    container_name: trace_tsdb
     environment:
-      POSTGRES_DB: explainiot
-      POSTGRES_USER: explainiot
-      POSTGRES_PASSWORD: explainiot
+      POSTGRES_DB: trace
+      POSTGRES_USER: trace
+      POSTGRES_PASSWORD: trace
     ports:
       - "5432:5432"
     volumes:
       - tsdb_data:/var/lib/postgresql/data
       - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U explainiot -d explainiot"]
+      test: ["CMD-SHELL", "pg_isready -U trace -d trace"]
       interval: 5s
       timeout: 3s
       retries: 15
@@ -58,12 +58,12 @@ services:
   # ── Grafana ─────────────────────────────────────────────────────────────────
   grafana:
     image: grafana/grafana:10.4.2
-    container_name: explainiot_grafana
+    container_name: trace_grafana
     ports:
       - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: explainiot
+      GF_SECURITY_ADMIN_PASSWORD: trace
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_INSTALL_PLUGINS: grafana-clock-panel
     volumes:

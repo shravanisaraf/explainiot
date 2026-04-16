@@ -98,7 +98,7 @@ async def _main() -> None:
     db = Database()
     await db.connect()
 
-    console.rule("[bold blue]ExplainIoT — LLM Explanation Rater[/bold blue]")
+    console.rule("[bold blue]TRACE — LLM Explanation Rater[/bold blue]")
     console.print(RUBRIC)
 
     alerts = await db.fetch_explained_alerts(limit=50)

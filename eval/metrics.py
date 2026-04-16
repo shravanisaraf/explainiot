@@ -307,7 +307,7 @@ async def _main() -> None:
     db = Database()
     await db.connect()
 
-    console.rule("[bold blue]ExplainIoT — Evaluation Metrics[/bold blue]")
+    console.rule("[bold blue]TRACE — Evaluation Metrics[/bold blue]")
 
     rows           = await db.fetch_all_alerts_for_metrics()
     total_injected = await db.fetch_total_injected()

@@ -1,11 +1,11 @@
-# ExplainIoT — Real-time IIoT Anomaly Detection with LLM Explanations
+# TRACE — Telemetry Reasoning and Anomaly Contextual Explanation for Industrial IoT
 
 > **"LLM-Augmented Anomaly Detection for Industrial IoT Sensor Streams: A Real-Time Pipeline Approach"**  
 > Submitted to arXiv (cs.LG, eess.SP)
 
-ExplainIoT is a real-time industrial IoT pipeline that detects sensor anomalies and explains them in plain English — telling operators not just *that* something is wrong, but *why*, *how severe*, and *what to do*. It streams data through Apache Kafka (Redpanda), detects anomalies using a sliding-window z-score method, and fires an async LLM call that generates a structured natural language explanation for every alert.
+TRACE is a real-time industrial IoT pipeline that detects sensor anomalies and explains them in plain English — telling operators not just *that* something is wrong, but *why*, *how severe*, and *what to do*. It streams data through Apache Kafka (Redpanda), detects anomalies using a sliding-window z-score method, and fires an async LLM call that generates a structured natural language explanation for every alert.
 
-![ExplainIoT Grafana Dashboard](dashboard.png)
+![TRACE Grafana Dashboard](dashboard.png)
 
 ---
 
@@ -92,8 +92,8 @@ Explanation latency is dominated by LLM inference on CPU. The detection path rem
 
 ```bash
 # 1. Clone
-git clone https://github.com/shravanisaraf/explainiot.git
-cd explainiot
+git clone https://github.com/shravanisaraf/TRACE.git
+cd TRACE
 
 # 2. Install Ollama model (one time, ~1.3 GB)
 ollama pull llama3.2:1b
@@ -106,7 +106,7 @@ pip install -r requirements.txt
 ./run.sh
 ```
 
-Open **http://localhost:3000** (admin / explainiot) for the live Grafana dashboard.
+Open **http://localhost:3000** (admin / trace) for the live Grafana dashboard.
 
 ### Evaluation
 
@@ -155,7 +155,7 @@ Existing IIoT anomaly detection work splits into two disconnected camps:
 
 Recent LLM-based work (SigLLM, AnomalyLLM, ICLR 2024 benchmark) uses LLMs *for detection*, not explanation — and operates exclusively in batch mode on offline datasets.
 
-**ExplainIoT closes four gaps simultaneously:** detection without explanation → XAI producing numbers not words → LLMs applied to detection not explanation → no streaming integration. A single architecture addresses all four.
+**TRACE closes four gaps simultaneously:** detection without explanation → XAI producing numbers not words → LLMs applied to detection not explanation → no streaming integration. A single architecture addresses all four.
 
 ---
 

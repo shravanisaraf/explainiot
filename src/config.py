@@ -16,12 +16,12 @@ def _get(key: str, default: str) -> str:
 # ── Kafka ────────────────────────────────────────────────────────────────────
 KAFKA_BOOTSTRAP_SERVERS: str = _get("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 KAFKA_TOPIC: str             = _get("KAFKA_TOPIC", "sensor_readings")
-KAFKA_GROUP_ID: str          = _get("KAFKA_GROUP_ID", "explainiot_consumer")
+KAFKA_GROUP_ID: str          = _get("KAFKA_GROUP_ID", "trace_consumer")
 
 # ── TimescaleDB ──────────────────────────────────────────────────────────────
 TSDB_DSN: str = _get(
     "TSDB_DSN",
-    "postgresql://explainiot:explainiot@localhost:5432/explainiot",
+    "postgresql://trace:trace@localhost:5432/trace",
 )
 
 # ── Ollama ───────────────────────────────────────────────────────────────────
