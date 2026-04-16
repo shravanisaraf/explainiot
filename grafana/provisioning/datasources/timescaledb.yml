@@ -4,10 +4,10 @@ datasources:
   - name: TimescaleDB
     type: postgres
     url: timescaledb:5432
-    database: trace
-    user: trace
+    database: explainiot
+    user: explainiot
     secureJsonData:
-      password: trace
+      password: explainiot
     jsonData:
       sslmode: disable
       postgresVersion: 1500

@@ -1,0 +1,532 @@
+TRACE — LLM Explanation Quality Review
+============================================================
+
+SCORING RUBRIC
+──────────────
+Correctness (1–5)
+  1 = Completely wrong — wrong signal, wrong direction, or impossible physics
+  2 = Mostly wrong — misidentifies the mechanism
+  3 = Plausible — reasonable guess given the data
+  4 = Mostly correct — right mechanism, minor inaccuracies
+  5 = Physically accurate — correct diagnosis with correct direction
+
+Actionability (1–5)
+  1 = Vague or unhelpful (e.g. "check the machine")
+  2 = Somewhat useful but generic
+  3 = Reasonable — correct type of action, not very specific
+  4 = Specific and actionable
+  5 = Specific, correctly targeted, and immediately executable
+
+Hallucination (y/n)
+  y = Explanation contains fabricated facts or physically impossible statements
+      e.g. mentions fuel in an electric motor, cites non-existent components
+  n = No hallucinations detected
+
+============================================================
+ALERTS
+
+── Alert 01 (id=206) ──────────────────────────
+  Machine     : machine_004  (conveyor_drive)
+  Signal      : vibration
+  Reading     : 1.693  →  3.26σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Misaligned or worn-out bearing in the conveyor drive's motor shaft.
+  Action      : Perform a visual inspection of the conveyor drive and replace any worn-out bearings immediately.
+
+── Alert 02 (id=205) ──────────────────────────
+  Machine     : machine_001  (hydraulic_pump)
+  Signal      : pressure
+  Reading     : 3.803  →  2.59σ BELOW rolling mean
+  Severity    : low
+  Detector    : zscore
+  Cause       : Low pressure in the pump's suction line due to blockage or leakage.
+  Action      : Check the suction line for any blockages or leaks and perform maintenance if necessary.
+
+── Alert 03 (id=204) ──────────────────────────
+  Machine     : machine_002  (electric_motor)
+  Signal      : temperature
+  Reading     : 86.196  →  4.30σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Motor bearing failure likely due to excessive temperature
+  Action      : Perform routine maintenance on motor bearings by checking for signs of wear or damage.
+
+── Alert 04 (id=207) ──────────────────────────
+  Machine     : machine_001  (hydraulic_pump)
+  Signal      : pressure
+  Reading     : 5.834  →  2.90σ ABOVE rolling mean
+  Severity    : low
+  Detector    : zscore
+  Cause       : Low pressure in the pump's suction line due to blockage or leakage.
+  Action      : Check the suction line for any blockages or leaks and perform maintenance if necessary.
+
+── Alert 05 (id=208) ──────────────────────────
+  Machine     : machine_005  (cnc_spindle)
+  Signal      : vibration
+  Reading     : 0.608  →  2.64σ BELOW rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Motor bearing wear or misalignment
+  Action      : Perform a routine bearing inspection and replace any worn or damaged components.
+
+── Alert 06 (id=209) ──────────────────────────
+  Machine     : machine_005  (cnc_spindle)
+  Signal      : temperature
+  Reading     : 30.230  →  3.21σ BELOW rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Overheating motor due to excessive load or poor cooling system design.
+  Action      : Reduce the spindle speed and/or increase the coolant flow rate to maintain a stable temperature within the normal range.
+
+── Alert 07 (id=210) ──────────────────────────
+  Machine     : machine_009  (conveyor_drive)
+  Signal      : pressure
+  Reading     : 1.517  →  3.54σ BELOW rolling mean
+  Severity    : medium
+  Detector    : zscore
+  Cause       : Low pressure in the system due to blockage or leakage at the drive shaft.
+  Action      : Perform a visual inspection of the conveyor drive and check for any signs of damage, blockages, or wear. If necessary, perform a minor maintenance task such as cleaning or replacing worn-out parts.
+
+── Alert 08 (id=212) ──────────────────────────
+  Machine     : machine_003  (air_compressor)
+  Signal      : pressure
+  Reading     : 6.668  →  3.51σ BELOW rolling mean
+  Severity    : medium
+  Detector    : zscore
+  Cause       : Low pressure due to possible blockage or damage in the air compressor's suction line
+  Action      : Perform visual inspection of the suction line and check for any signs of blockages or damage, then replace the affected part if necessary.
+
+── Alert 09 (id=211) ──────────────────────────
+  Machine     : machine_009  (conveyor_drive)
+  Signal      : pressure
+  Reading     : 3.179  →  3.40σ ABOVE rolling mean
+  Severity    : medium
+  Detector    : zscore
+  Cause       : Low pressure in the system due to blockage or leakage at the drive shaft.
+  Action      : Perform a visual inspection of the conveyor drive and check for any signs of damage, blockages, or leaks. If found, repair or replace as necessary to restore normal operation.
+
+── Alert 10 (id=215) ──────────────────────────
+  Machine     : machine_009  (conveyor_drive)
+  Signal      : pressure
+  Reading     : 3.205  →  3.55σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Overheating motor due to excessive pressure load
+  Action      : Perform a motor shutdown and replace the affected unit with a new one, or consider upgrading to a more robust motor design.
+
+── Alert 11 (id=216) ──────────────────────────
+  Machine     : machine_007  (electric_motor)
+  Signal      : vibration
+  Reading     : 2.208  →  3.31σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Motor bearing wear or imbalance due to excessive vibration.
+  Action      : Perform routine bearing maintenance by checking for signs of excessive wear and replace if necessary.
+
+── Alert 12 (id=214) ──────────────────────────
+  Machine     : machine_010  (cnc_spindle)
+  Signal      : vibration
+  Reading     : 6.126  →  5.58σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Motor bearing wear or misalignment
+  Action      : Perform a routine bearing inspection and replace any worn or damaged components.
+
+── Alert 13 (id=213) ──────────────────────────
+  Machine     : machine_003  (air_compressor)
+  Signal      : vibration
+  Reading     : 1.162  →  4.09σ BELOW rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Mechanical failure of the vibration sensor or its mounting system.
+  Action      : Perform a visual inspection of the vibration sensor and its mounting system to identify any signs of damage or wear. If damage is found, replace the sensor immediately.
+
+── Alert 14 (id=219) ──────────────────────────
+  Machine     : machine_009  (conveyor_drive)
+  Signal      : pressure
+  Reading     : 3.115  →  3.12σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Overheating motor due to excessive pressure load
+  Action      : Perform a motor shutdown and replace the affected unit with a new one, or consider upgrading to a more robust motor design.
+
+── Alert 15 (id=217) ──────────────────────────
+  Machine     : machine_002  (electric_motor)
+  Signal      : temperature
+  Reading     : 80.892  →  2.67σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Motor bearing failure likely due to excessive temperature
+  Action      : Perform routine maintenance on motor bearings by checking for signs of wear and replacing if necessary.
+
+── Alert 16 (id=218) ──────────────────────────
+  Machine     : machine_003  (air_compressor)
+  Signal      : vibration
+  Reading     : 1.083  →  3.75σ BELOW rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Misaligned or loose mounting of vibration sensor
+  Action      : Verify and tighten any loose fasteners on the vibration sensor mount, ensuring proper alignment.
+
+── Alert 17 (id=220) ──────────────────────────
+  Machine     : machine_007  (electric_motor)
+  Signal      : vibration
+  Reading     : 2.042  →  2.51σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Motor bearing wear or imbalance due to excessive vibration.
+  Action      : Perform routine bearing maintenance by checking for signs of excessive wear and replace if necessary.
+
+── Alert 18 (id=222) ──────────────────────────
+  Machine     : machine_003  (air_compressor)
+  Signal      : vibration
+  Reading     : 1.249  →  3.03σ BELOW rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Mechanical failure of the vibration sensor or its mounting system.
+  Action      : Perform a visual inspection of the vibration sensor and its mounting system to identify any signs of damage or wear.
+
+── Alert 19 (id=223) ──────────────────────────
+  Machine     : machine_009  (conveyor_drive)
+  Signal      : pressure
+  Reading     : 1.385  →  3.72σ BELOW rolling mean
+  Severity    : medium
+  Detector    : zscore
+  Cause       : Low pressure in the system due to blockage or damage to the conveyor belt.
+  Action      : Perform a visual inspection of the conveyor belt and surrounding area for any signs of damage or blockages. If found, repair or replace as necessary to restore normal operation.
+
+── Alert 20 (id=221) ──────────────────────────
+  Machine     : machine_002  (electric_motor)
+  Signal      : temperature
+  Reading     : 81.027  →  2.53σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Motor bearing failure likely due to excessive temperature
+  Action      : Perform routine motor bearing maintenance and inspect for signs of wear or damage.
+
+── Alert 21 (id=224) ──────────────────────────
+  Machine     : machine_007  (electric_motor)
+  Signal      : vibration
+  Reading     : 0.637  →  2.73σ BELOW rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Motor bearing wear or imbalance due to excessive vibration.
+  Action      : Perform a visual inspection of the motor and bearings for signs of wear or imbalance, and replace if necessary.
+
+── Alert 22 (id=225) ──────────────────────────
+  Machine     : machine_003  (air_compressor)
+  Signal      : vibration
+  Reading     : 1.298  →  2.70σ BELOW rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Misaligned or loose mounting of vibration sensor
+  Action      : Verify and tighten any loose or misaligned components on the vibration sensor mount.
+
+── Alert 23 (id=227) ──────────────────────────
+  Machine     : machine_009  (conveyor_drive)
+  Signal      : temperature
+  Reading     : 56.905  →  2.51σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Overheating due to excessive load or poor airflow in the conveyor belt.
+  Action      : Reduce the load on the conveyor drive and ensure proper airflow around the machine. Inspect the conveyor belt for any blockages or damage that may be contributing to the overheating.
+
+── Alert 24 (id=226) ──────────────────────────
+  Machine     : machine_003  (air_compressor)
+  Signal      : vibration
+  Reading     : 1.073  →  2.91σ BELOW rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Mechanical failure of the vibration sensor or its mounting system.
+  Action      : Perform a visual inspection of the vibration sensor and its mounting system to identify any signs of damage or wear. If necessary, replace the sensor with a new one.
+
+── Alert 25 (id=228) ──────────────────────────
+  Machine     : machine_003  (air_compressor)
+  Signal      : vibration
+  Reading     : 1.009  →  2.80σ BELOW rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Mechanical wear on the bearing housing due to excessive vibration.
+  Action      : Perform a scheduled bearing maintenance check and inspect for any signs of mechanical failure.
+
+── Alert 26 (id=229) ──────────────────────────
+  Machine     : machine_007  (electric_motor)
+  Signal      : temperature
+  Reading     : 79.425  →  2.63σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Motor bearing failure likely due to excessive temperature
+  Action      : Perform routine maintenance on motor bearings by replacing worn-out parts and checking for any signs of overheating.
+
+── Alert 27 (id=230) ──────────────────────────
+  Machine     : machine_007  (electric_motor)
+  Signal      : temperature
+  Reading     : 80.519  →  2.73σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Motor bearing failure likely due to excessive temperature
+  Action      : Perform routine maintenance on motor bearings by replacing worn-out parts and checking for any signs of overheating.
+
+── Alert 28 (id=231) ──────────────────────────
+  Machine     : machine_003  (air_compressor)
+  Signal      : vibration
+  Reading     : 4.540  →  2.60σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Mechanical damage to the vibration sensor or shaft due to excessive wear.
+  Action      : Perform a routine maintenance inspection on the air compressor and replace the worn-out sensor if necessary.
+
+── Alert 29 (id=232) ──────────────────────────
+  Machine     : machine_006  (hydraulic_pump)
+  Signal      : temperature
+  Reading     : 86.462  →  3.63σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Overheating due to excessive fluid flow or blockage in the pump's suction line.
+  Action      : Perform a visual inspection of the pump and its suction lines to identify any blockages or signs of overheating. If necessary, replace the affected component with a new one.
+
+── Alert 30 (id=233) ──────────────────────────
+  Machine     : machine_006  (hydraulic_pump)
+  Signal      : temperature
+  Reading     : 93.138  →  5.19σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Overheating due to excessive fluid flow or blockage in the pump's suction line.
+  Action      : Perform a visual inspection of the pump and its suction lines to identify any blockages or signs of overheating. If necessary, replace the affected component with a new one.
+
+── Alert 31 (id=235) ──────────────────────────
+  Machine     : machine_007  (electric_motor)
+  Signal      : vibration
+  Reading     : 2.029  →  2.60σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Motor bearing wear or imbalance due to excessive load or vibration.
+  Action      : Perform routine maintenance on machine_007, including inspecting and balancing the motor bearings.
+
+── Alert 32 (id=236) ──────────────────────────
+  Machine     : machine_002  (electric_motor)
+  Signal      : temperature
+  Reading     : 47.830  →  3.99σ BELOW rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Motor bearing failure likely due to excessive temperature
+  Action      : Perform routine maintenance on motor bearings by replacing worn-out parts and checking for any signs of overheating.
+
+── Alert 33 (id=234) ──────────────────────────
+  Machine     : machine_006  (hydraulic_pump)
+  Signal      : temperature
+  Reading     : 56.223  →  4.50σ BELOW rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Overheating due to excessive fluid flow or blockage in the pump's suction line.
+  Action      : Perform a visual inspection of the pump and its suction lines to identify any blockages or signs of overheating. If necessary, replace the affected component with a new one.
+
+── Alert 34 (id=237) ──────────────────────────
+  Machine     : machine_006  (hydraulic_pump)
+  Signal      : temperature
+  Reading     : 57.263  →  3.58σ BELOW rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Overheating due to excessive fluid flow or blockage in the pump's suction line.
+  Action      : Perform a visual inspection of the pump and its suction lines to identify any blockages or signs of overheating. If necessary, replace the affected component with a new one.
+
+── Alert 35 (id=238) ──────────────────────────
+  Machine     : machine_010  (cnc_spindle)
+  Signal      : temperature
+  Reading     : 81.738  →  2.56σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : High temperature reading from the CNC spindle motor may be due to excessive heat generation or electrical issues.
+  Action      : Perform a thermal analysis of the motor and check for any signs of overheating, then replace the motor if necessary. Also, inspect the power supply and cooling system for any blockages or damage.
+
+── Alert 36 (id=239) ──────────────────────────
+  Machine     : machine_006  (hydraulic_pump)
+  Signal      : temperature
+  Reading     : 55.914  →  3.44σ BELOW rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Overheating due to excessive fluid flow or blockage in the pump's suction line.
+  Action      : Perform a visual inspection of the pump and its suction lines to identify any blockages or signs of overheating. If necessary, replace the affected component with a new one.
+
+── Alert 37 (id=241) ──────────────────────────
+  Machine     : machine_006  (hydraulic_pump)
+  Signal      : vibration
+  Reading     : 0.813  →  2.88σ BELOW rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : The vibration reading is within the normal range but has increased significantly over time.
+  Action      : Perform a thorough inspection of the hydraulic pump and its mounting system to ensure proper alignment and secure fastening.
+
+── Alert 38 (id=240) ──────────────────────────
+  Machine     : machine_006  (hydraulic_pump)
+  Signal      : temperature
+  Reading     : 57.459  →  2.83σ BELOW rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Overheating due to excessive fluid flow or blockage in the pump's suction line.
+  Action      : Perform a visual inspection of the pump and its suction lines to identify any blockages or signs of overheating. If necessary, replace the affected component with a new one.
+
+── Alert 39 (id=242) ──────────────────────────
+  Machine     : machine_006  (hydraulic_pump)
+  Signal      : temperature
+  Reading     : 56.979  →  2.69σ BELOW rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Overheating due to excessive fluid flow or blockage in the pump's suction line.
+  Action      : Perform a visual inspection of the pump and its suction lines to identify any blockages or signs of overheating. If necessary, replace the affected component with a new one.
+
+── Alert 40 (id=243) ──────────────────────────
+  Machine     : machine_006  (hydraulic_pump)
+  Signal      : temperature
+  Reading     : 56.601  →  2.56σ BELOW rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Overheating due to excessive fluid flow or blockage in the pump's suction line.
+  Action      : Perform a visual inspection of the pump and its suction lines to identify any blockages or signs of overheating. If necessary, replace the affected component with a new one.
+
+── Alert 41 (id=244) ──────────────────────────
+  Machine     : machine_010  (cnc_spindle)
+  Signal      : pressure
+  Reading     : 7.744  →  3.25σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : High pressure reading due to excessive spindle load or misalignment.
+  Action      : Check and adjust the spindle alignment and ensure proper loading conditions for optimal performance.
+
+── Alert 42 (id=245) ──────────────────────────
+  Machine     : machine_008  (air_compressor)
+  Signal      : vibration
+  Reading     : 4.229  →  2.93σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Mechanical imbalance or wear on the bearing housing
+  Action      : Perform a visual inspection of the bearing housing and replace any worn components immediately.
+
+── Alert 43 (id=246) ──────────────────────────
+  Machine     : machine_004  (conveyor_drive)
+  Signal      : vibration
+  Reading     : 1.543  →  2.67σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Misaligned or worn-out bearing in the conveyor drive's motor shaft.
+  Action      : Perform a visual inspection of the conveyor drive and replace any worn-out bearings immediately.
+
+── Alert 44 (id=249) ──────────────────────────
+  Machine     : machine_004  (conveyor_drive)
+  Signal      : vibration
+  Reading     : 1.552  →  2.52σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Misaligned or worn-out bearing in the conveyor drive's motor shaft.
+  Action      : Perform a visual inspection of the conveyor drive and replace any worn-out bearings immediately.
+
+── Alert 45 (id=247) ──────────────────────────
+  Machine     : machine_007  (electric_motor)
+  Signal      : vibration
+  Reading     : 2.446  →  2.98σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Motor bearing wear or imbalance due to excessive load or vibration.
+  Action      : Perform routine maintenance on machine_007, including inspecting and balancing the motor bearings.
+
+── Alert 46 (id=248) ──────────────────────────
+  Machine     : machine_008  (air_compressor)
+  Signal      : vibration
+  Reading     : 4.404  →  3.00σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Mechanical failure of the vibration sensor or its mounting system.
+  Action      : Perform a visual inspection of the vibration sensor and its mounting system to identify any signs of damage or wear.
+
+── Alert 47 (id=250) ──────────────────────────
+  Machine     : machine_008  (air_compressor)
+  Signal      : vibration
+  Reading     : 4.481  →  2.78σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Mechanical failure of the vibration sensor or its mounting system.
+  Action      : Perform a visual inspection of the vibration sensor and its mounting system to identify any signs of damage or wear. If necessary, replace the sensor with a new one.
+
+── Alert 48 (id=251) ──────────────────────────
+  Machine     : machine_009  (conveyor_drive)
+  Signal      : vibration
+  Reading     : 0.049  →  5.51σ BELOW rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : Misaligned or worn-out bearing in the conveyor drive's motor shaft.
+  Action      : Perform a bearing inspection and replace if necessary to prevent further vibration issues.
+
+── Alert 49 (id=252) ──────────────────────────
+  Machine     : machine_003  (air_compressor)
+  Signal      : temperature
+  Reading     : 102.522  →  2.81σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : High temperature may be caused by excessive fuel consumption or blockage in the air filter.
+  Action      : Check and clean the air filter immediately to prevent further damage.
+
+── Alert 50 (id=253) ──────────────────────────
+  Machine     : machine_003  (air_compressor)
+  Signal      : temperature
+  Reading     : 104.746  →  2.94σ ABOVE rolling mean
+  Severity    : high
+  Detector    : zscore
+  Cause       : High temperature may be caused by excessive fuel consumption or blockage in the air filter.
+  Action      : Check and clean the air filter immediately to prevent further damage.
+
+============================================================
+SCORE SHEET  — fill in one line per alert: C  A  H
+Format: <correctness 1-5>  <actionability 1-5>  <hallucination y/n>
+Example:  3  4  n
+
+  Alert 01: _  _  _
+  Alert 02: _  _  _
+  Alert 03: _  _  _
+  Alert 04: _  _  _
+  Alert 05: _  _  _
+  Alert 06: _  _  _
+  Alert 07: _  _  _
+  Alert 08: _  _  _
+  Alert 09: _  _  _
+  Alert 10: _  _  _
+  Alert 11: _  _  _
+  Alert 12: _  _  _
+  Alert 13: _  _  _
+  Alert 14: _  _  _
+  Alert 15: _  _  _
+  Alert 16: _  _  _
+  Alert 17: _  _  _
+  Alert 18: _  _  _
+  Alert 19: _  _  _
+  Alert 20: _  _  _
+  Alert 21: _  _  _
+  Alert 22: _  _  _
+  Alert 23: _  _  _
+  Alert 24: _  _  _
+  Alert 25: _  _  _
+  Alert 26: _  _  _
+  Alert 27: _  _  _
+  Alert 28: _  _  _
+  Alert 29: _  _  _
+  Alert 30: _  _  _
+  Alert 31: _  _  _
+  Alert 32: _  _  _
+  Alert 33: _  _  _
+  Alert 34: _  _  _
+  Alert 35: _  _  _
+  Alert 36: _  _  _
+  Alert 37: _  _  _
+  Alert 38: _  _  _
+  Alert 39: _  _  _
+  Alert 40: _  _  _
+  Alert 41: _  _  _
+  Alert 42: _  _  _
+  Alert 43: _  _  _
+  Alert 44: _  _  _
+  Alert 45: _  _  _
+  Alert 46: _  _  _
+  Alert 47: _  _  _
+  Alert 48: _  _  _
+  Alert 49: _  _  _
+  Alert 50: _  _  _
