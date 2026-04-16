@@ -74,14 +74,15 @@ class Database:
             INSERT INTO anomaly_alerts
                 (time, machine_id, machine_type, signal, value,
                  z_score, window_mean, window_std, is_injected, anomaly_type,
-                 explanation_status)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pending')
+                 detector_type, cusum_score, explanation_status)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'pending')
             RETURNING id
             """,
             alert.time, alert.machine_id, alert.machine_type,
             alert.signal, alert.value,
             alert.z_score, alert.window_mean, alert.window_std,
             alert.is_injected, alert.anomaly_type,
+            alert.detector_type, alert.cusum_score,
         )
         return row["id"]
 
@@ -128,6 +129,7 @@ class Database:
                 aa.id, aa.time, aa.machine_id, aa.machine_type, aa.signal,
                 aa.value, aa.z_score, aa.window_mean, aa.window_std,
                 aa.is_injected, aa.anomaly_type,
+                aa.detector_type, aa.cusum_score,
                 aa.probable_cause, aa.severity,
                 aa.recommended_action, aa.confidence,
                 aa.llm_latency_ms, aa.llm_model
@@ -164,6 +166,7 @@ class Database:
             """
             SELECT
                 aa.id, aa.is_injected, aa.z_score,
+                aa.detector_type, aa.cusum_score,
                 aa.severity, aa.confidence, aa.llm_latency_ms,
                 lr.correctness, lr.actionability, lr.hallucination
             FROM anomaly_alerts aa

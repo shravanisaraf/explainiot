@@ -1,5 +1,5 @@
 """
-Kafka consumer — reads sensor readings, runs the sliding-window detector,
+Kafka consumer — reads sensor readings, runs the hybrid detector,
 writes raw readings and anomaly alerts to TimescaleDB, then fires async
 LLM explanation tasks in the background.
 
@@ -9,6 +9,8 @@ The event loop runs three coroutines concurrently:
 
   _kafka_loop   — polls Kafka via run_in_executor (non-blocking to asyncio),
                   feeds readings to the detector, enqueues alerts.
+                  Applies a per-(machine, signal) cooldown to suppress duplicate
+                  alerts when a fault persists across multiple readings.
 
   _explain_loop — drains the alert queue, calls LLMExplainer, updates DB.
                   Multiple concurrent explanation tasks are allowed so that
@@ -16,9 +18,9 @@ The event loop runs three coroutines concurrently:
 
   _stats_loop   — logs throughput and detection statistics every 30 s.
 
-LLM calls never block the Kafka polling path. End-to-end latency from
-anomaly detection to explanation available is dominated by LLM inference
-(typically 2–8 s on CPU for a 7B model), not by any I/O in this codebase.
+LLM calls never block the Kafka polling path. The detector state (rolling
+windows + CUSUM accumulators) is saved on clean shutdown and reloaded on
+startup, eliminating the cold-start recall penalty after pipeline restarts.
 
 Run with:
     python -m src.consumer
@@ -28,14 +30,13 @@ from __future__ import annotations
 
 import asyncio
 import signal
-import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
 
 import structlog
 from confluent_kafka import Consumer, KafkaError
 
-from src.config import KAFKA_BOOTSTRAP_SERVERS, KAFKA_GROUP_ID, KAFKA_TOPIC, LOG_LEVEL
+from src.config import KAFKA_BOOTSTRAP_SERVERS, KAFKA_GROUP_ID, KAFKA_TOPIC
 from src.db import Database
 from src.detector import SlidingWindowDetector
 from src.explainer import LLMExplainer
@@ -45,6 +46,10 @@ log = structlog.get_logger(__name__)
 
 # Maximum concurrent LLM explanation tasks in flight simultaneously
 MAX_CONCURRENT_EXPLANATIONS = 4
+
+# Minimum seconds between consecutive alerts for the same (machine, signal).
+# Prevents flooding the queue with duplicate alerts during a sustained fault.
+ALERT_COOLDOWN_S = 30
 
 
 class Pipeline:
@@ -56,11 +61,15 @@ class Pipeline:
         self._alert_queue: asyncio.Queue = asyncio.Queue(maxsize=512)
         self._running  = True
 
+        # Per-(machine_id, signal) timestamp of last emitted alert
+        self._last_alert_t: dict[tuple[str, str], float] = {}
+
         # Stats
-        self._total_readings  = 0
-        self._total_anomalies = 0
-        self._total_explained = 0
-        self._t_start         = time.time()
+        self._total_readings   = 0
+        self._total_anomalies  = 0
+        self._total_suppressed = 0
+        self._total_explained  = 0
+        self._t_start          = time.time()
 
     # ── Kafka polling (runs in thread pool to avoid blocking event loop) ──────
 
@@ -94,23 +103,33 @@ class Pipeline:
             self._total_readings += len(readings)
 
             # Detect anomalies
+            now = time.time()
             for reading in readings:
                 alert = self.detector.process(reading)
-                if alert:
-                    alert.db_id = await self.db.insert_alert(alert)
-                    self._total_anomalies += 1
+                if not alert:
+                    continue
 
-                    # Snapshot the current window history for the LLM prompt
-                    history = self.detector.window_history(
-                        reading.machine_id, reading.signal
+                # ── Cooldown: suppress duplicate alerts for same stream ────────
+                key = (reading.machine_id, reading.signal)
+                if now - self._last_alert_t.get(key, 0.0) < ALERT_COOLDOWN_S:
+                    self._total_suppressed += 1
+                    continue
+                self._last_alert_t[key] = now
+
+                alert.db_id = await self.db.insert_alert(alert)
+                self._total_anomalies += 1
+
+                # Snapshot the current window history for the LLM prompt
+                history = self.detector.window_history(
+                    reading.machine_id, reading.signal
+                )
+                try:
+                    self._alert_queue.put_nowait((alert, history))
+                except asyncio.QueueFull:
+                    log.warning(
+                        "consumer.alert_queue_full",
+                        machine_id=alert.machine_id,
                     )
-                    try:
-                        self._alert_queue.put_nowait((alert, history))
-                    except asyncio.QueueFull:
-                        log.warning(
-                            "consumer.alert_queue_full",
-                            machine_id=alert.machine_id,
-                        )
 
     async def _explain_one(self, alert, history) -> None:  # noqa: ANN001
         result = await self.explainer.explain(alert, history)
@@ -143,9 +162,9 @@ class Pipeline:
     async def _stats_loop(self) -> None:
         while self._running:
             await asyncio.sleep(30)
-            elapsed   = time.time() - self._t_start
-            rate      = self._total_readings / max(elapsed, 1)
-            det_rate  = (
+            elapsed  = time.time() - self._t_start
+            rate     = self._total_readings / max(elapsed, 1)
+            det_rate = (
                 self._total_anomalies / self._total_readings * 100
                 if self._total_readings else 0.0
             )
@@ -153,6 +172,7 @@ class Pipeline:
                 "pipeline.stats",
                 readings=self._total_readings,
                 anomalies=self._total_anomalies,
+                suppressed=self._total_suppressed,
                 explained=self._total_explained,
                 throughput_hz=round(rate, 1),
                 detection_pct=round(det_rate, 2),
@@ -163,6 +183,10 @@ class Pipeline:
 
     async def run(self) -> None:
         await self.db.connect()
+
+        # Restore detector state from previous run (warm windows + CUSUM)
+        self.detector.load_state()
+        log.info("pipeline.detector_state_loaded", streams=self.detector.active_streams)
 
         log.info("pipeline.checking_ollama")
         available = await self.explainer.ensure_model_available()
@@ -201,10 +225,13 @@ class Pipeline:
             await self.explainer.close()
             await self.db.close()
             self._executor.shutdown(wait=False)
+            # Persist detector state so the next run resumes with warm windows
+            self.detector.save_state()
             log.info(
                 "pipeline.stopped",
                 total_readings=self._total_readings,
                 total_anomalies=self._total_anomalies,
+                total_suppressed=self._total_suppressed,
                 total_explained=self._total_explained,
             )
 

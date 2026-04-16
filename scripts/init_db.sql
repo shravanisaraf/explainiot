@@ -34,6 +34,10 @@ CREATE TABLE IF NOT EXISTS anomaly_alerts (
     is_injected        BOOLEAN            NOT NULL,
     anomaly_type       TEXT               NULL,
 
+    -- Hybrid detector fields
+    detector_type      TEXT               NULL,    -- zscore | cusum | hybrid
+    cusum_score        DOUBLE PRECISION   NULL,    -- CUSUM accumulator at detection
+
     -- LLM explanation fields (populated asynchronously)
     explanation_status TEXT               NOT NULL DEFAULT 'pending',
     probable_cause     TEXT               NULL,
@@ -55,6 +59,9 @@ CREATE INDEX IF NOT EXISTS idx_aa_severity
     WHERE severity IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_aa_status
     ON anomaly_alerts (explanation_status);
+CREATE INDEX IF NOT EXISTS idx_aa_detector
+    ON anomaly_alerts (detector_type, time DESC)
+    WHERE detector_type IS NOT NULL;
 
 -- ── Continuous aggregate: anomaly counts per minute ─────────────────────────
 CREATE MATERIALIZED VIEW IF NOT EXISTS anomaly_rate_per_minute

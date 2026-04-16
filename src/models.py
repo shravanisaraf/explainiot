@@ -40,6 +40,11 @@ class AnomalyAlert(BaseModel):
     is_injected:  bool
     anomaly_type: Optional[str] = None
 
+    # Which detector(s) fired: "zscore" | "cusum" | "hybrid"
+    detector_type: Optional[str] = None
+    # Raw CUSUM score at detection time (higher = more persistent drift)
+    cusum_score:   Optional[float] = None
+
     # populated after DB insert
     db_id: Optional[int] = None
 
@@ -53,7 +58,6 @@ class LLMExplanation(BaseModel):
     @classmethod
     def from_json_str(cls, raw: str) -> "LLMExplanation":
         """Parse LLM JSON output, tolerating minor formatting issues."""
-        # Strip markdown code fences if present
         raw = raw.strip()
         if raw.startswith("```"):
             raw = raw.split("```")[1]

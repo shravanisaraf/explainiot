@@ -55,6 +55,11 @@ def _build_user_prompt(
     normal_hi  = round(params["mean"] + 2 * params["std"], 3)
     recent_str = ", ".join(f"{v:.3f}" for v in recent_values[-10:])
 
+    # Direction of deviation — critical for accurate LLM diagnosis
+    direction = "above" if alert.value > alert.window_mean else "below"
+    z_abs     = abs(alert.z_score)
+    detector  = (alert.detector_type or "zscore").upper()
+
     return f"""\
 === SENSOR ANOMALY REPORT ===
 
@@ -67,10 +72,15 @@ Anomalous reading : {alert.value:.3f} {unit}
 Normal range (±2σ): {normal_lo} – {normal_hi} {unit}
 Rolling mean      : {alert.window_mean:.3f} {unit}
 Rolling std dev   : {alert.window_std:.3f} {unit}
-Z-score           : {alert.z_score:.2f}  (detection threshold: 2.5)
+Direction         : {z_abs:.2f}σ {direction} the rolling mean
+Z-score           : {alert.z_score:.2f}  (threshold: ±2.5)
+Detector          : {detector}  (ZSCORE=single spike, CUSUM=persistent drift, HYBRID=both)
 
 Recent readings (oldest → newest, last 10 values):
   [{recent_str}]
+
+IMPORTANT: Direction is "{direction.upper()}" — this reading is a {direction} the normal range.
+If "below", diagnose as a drop/loss (e.g. pressure loss, temperature drop) not a rise.
 
 Provide your diagnosis as a JSON object with the four required fields.\
 """
@@ -95,7 +105,7 @@ class LLMExplainer:
         self,
         alert: AnomalyAlert,
         recent_values: list[float],
-    ) -> Optional[LLMExplanation]:
+    ) -> Optional[tuple[LLMExplanation, int]]:
         """
         Call the LLM and return a structured explanation.
         Returns None on failure so the caller can mark the alert as failed
@@ -155,7 +165,7 @@ class LLMExplainer:
             confidence=round(explanation.confidence, 2),
             latency_ms=elapsed_ms,
         )
-        return explanation, elapsed_ms  # type: ignore[return-value]
+        return explanation, elapsed_ms
 
     async def ensure_model_available(self) -> bool:
         """Pull the model if it is not already cached in Ollama."""

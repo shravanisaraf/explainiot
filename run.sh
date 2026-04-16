@@ -4,9 +4,10 @@
 # Starts all infrastructure, waits for readiness, then runs the pipeline.
 #
 # Usage:
-#   ./run.sh           — full stack (producer + consumer)
-#   ./run.sh producer  — producer only
+#   ./run.sh           — full stack (simulated producer + consumer)
+#   ./run.sh producer  — simulated producer only
 #   ./run.sh consumer  — consumer only
+#   ./run.sh skab      — SKAB real-dataset producer + consumer
 #   ./run.sh down      — stop all containers
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
@@ -97,13 +98,19 @@ echo "  TimescaleDB    →  localhost:5432  (psql -U trace -d trace)"
 echo ""
 
 if [[ "$MODE" == "all" || "$MODE" == "producer" ]]; then
-    info "Starting producer..."
+    info "Starting simulated producer..."
     $PYTHON -m src.producer &
     PRODUCER_PID=$!
 fi
 
-if [[ "$MODE" == "all" || "$MODE" == "consumer" ]]; then
-    info "Starting consumer (Kafka → detector → LLM → TimescaleDB)..."
+if [[ "$MODE" == "skab" ]]; then
+    info "Starting SKAB real-dataset producer (replay speed: ${SKAB_REPLAY_SPEED:-10}×)..."
+    $PYTHON -m src.skab_producer &
+    PRODUCER_PID=$!
+fi
+
+if [[ "$MODE" == "all" || "$MODE" == "consumer" || "$MODE" == "skab" ]]; then
+    info "Starting consumer (Kafka → hybrid detector → LLM → TimescaleDB)..."
     $PYTHON -m src.consumer &
     CONSUMER_PID=$!
 fi

@@ -238,7 +238,7 @@
       "datasource": "TimescaleDB",
       "options": { "sortBy": [{ "displayName": "Time", "desc": true }] },
       "targets": [{
-        "rawSql": "SELECT time, machine_id, machine_type, signal, ROUND(value::numeric, 3) AS value, ROUND(z_score::numeric, 2) AS z_score, is_injected, explanation_status, severity, ROUND(confidence::numeric, 2) AS confidence, probable_cause, recommended_action, llm_latency_ms FROM anomaly_alerts WHERE $__timeFilter(time) ORDER BY explanation_status ASC, time DESC LIMIT 100",
+        "rawSql": "SELECT time, machine_id, machine_type, signal, ROUND(value::numeric, 3) AS value, ROUND(z_score::numeric, 2) AS z_score, detector_type, ROUND(cusum_score::numeric, 2) AS cusum_score, is_injected, explanation_status, severity, ROUND(confidence::numeric, 2) AS confidence, probable_cause, recommended_action, llm_latency_ms FROM anomaly_alerts WHERE $__timeFilter(time) ORDER BY explanation_status ASC, time DESC LIMIT 100",
         "format": "table"
       }],
       "fieldConfig": {
@@ -264,6 +264,19 @@
               "value": [
                 { "type": "value", "options": { "true":  { "text": "TP", "color": "green" } } },
                 { "type": "value", "options": { "false": { "text": "FP", "color": "red"   } } }
+              ]
+            }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "detector_type" },
+            "properties": [{
+              "id": "custom.displayMode", "value": "color-text"
+            }, {
+              "id": "mappings",
+              "value": [
+                { "type": "value", "options": { "zscore": { "text": "Z-SCORE", "color": "blue"   } } },
+                { "type": "value", "options": { "cusum":  { "text": "CUSUM",   "color": "orange" } } },
+                { "type": "value", "options": { "hybrid": { "text": "HYBRID",  "color": "purple" } } }
               ]
             }]
           }
