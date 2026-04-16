@@ -1,0 +1,9 @@
+{
+  "n": 50,
+  "correctness_kappa": 0.456,
+  "actionability_kappa": 0.048,
+  "hallucination_kappa": 0.37,
+  "correctness_label": "moderate",
+  "actionability_label": "slight",
+  "hallucination_label": "fair"
+}
