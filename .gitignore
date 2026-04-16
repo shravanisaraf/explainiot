@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+.DS_Store
+eval/figures/
+eval/metrics.json
+*.egg-info/
+.pytest_cache/

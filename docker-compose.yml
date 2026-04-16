@@ -1,0 +1,82 @@
+services:
+  # ── Redpanda (Kafka-compatible, single-binary, no ZooKeeper) ────────────────
+  redpanda:
+    image: redpandadata/redpanda:v23.3.11
+    container_name: explainiot_redpanda
+    command:
+      - redpanda
+      - start
+      - --overprovisioned
+      - --smp=1
+      - --memory=512M
+      - --reserve-memory=0M
+      - --node-id=0
+      - --check=false
+      - --kafka-addr=PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr=PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy: true'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redpanda-console:
+    image: redpandadata/console:v2.4.3
+    container_name: explainiot_console
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_BROKERS: "redpanda:29092"
+    depends_on:
+      redpanda:
+        condition: service_healthy
+
+  # ── TimescaleDB ─────────────────────────────────────────────────────────────
+  timescaledb:
+    image: timescale/timescaledb:latest-pg15
+    container_name: explainiot_tsdb
+    environment:
+      POSTGRES_DB: explainiot
+      POSTGRES_USER: explainiot
+      POSTGRES_PASSWORD: explainiot
+    ports:
+      - "5432:5432"
+    volumes:
+      - tsdb_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U explainiot -d explainiot"]
+      interval: 5s
+      timeout: 3s
+      retries: 15
+
+  # ── Grafana ─────────────────────────────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.4.2
+    container_name: explainiot_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: explainiot
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_INSTALL_PLUGINS: grafana-clock-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+
+  # Ollama runs natively via: brew services start ollama
+
+volumes:
+  redpanda_data:
+  tsdb_data:
+  grafana_data:

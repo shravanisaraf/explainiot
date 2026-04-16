@@ -1,0 +1,284 @@
+{
+  "__inputs": [],
+  "__requires": [
+    { "type": "datasource", "id": "postgres", "name": "PostgreSQL", "version": "1.0.0" }
+  ],
+  "annotations": { "list": [] },
+  "description": "ExplainIoT — Real-time IIoT Anomaly Detection with LLM Explanations",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Total Readings",
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "datasource": "TimescaleDB",
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "targets": [{
+        "rawSql": "SELECT NOW() AS time, COUNT(*) AS value FROM sensor_readings WHERE $__timeFilter(time)",
+        "format": "time_series"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "steps": [{ "color": "blue", "value": null }] },
+          "unit": "short"
+        }
+      }
+    },
+
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Total Anomalies Detected",
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
+      "datasource": "TimescaleDB",
+      "options": {
+        "colorMode": "background",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "targets": [{
+        "rawSql": "SELECT NOW() AS time, COUNT(*) AS value FROM anomaly_alerts WHERE $__timeFilter(time)",
+        "format": "time_series"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "green",  "value": null },
+              { "color": "orange", "value": 50 },
+              { "color": "red",    "value": 200 }
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Detection Rate",
+      "gridPos": { "h": 4, "w": 4, "x": 8, "y": 0 },
+      "datasource": "TimescaleDB",
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{
+        "rawSql": "SELECT NOW() AS time, ROUND(100.0 * COUNT(DISTINCT aa.id) / NULLIF(COUNT(DISTINCT sr.id), 0), 2) AS value FROM sensor_readings sr LEFT JOIN anomaly_alerts aa ON aa.machine_id = sr.machine_id AND ABS(EXTRACT(EPOCH FROM (sr.time - aa.time))) < 0.5 WHERE $__timeFilter(sr.time)",
+        "format": "time_series"
+      }],
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "decimals": 1 }
+      }
+    },
+
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Avg LLM Latency",
+      "gridPos": { "h": 4, "w": 4, "x": 12, "y": 0 },
+      "datasource": "TimescaleDB",
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{
+        "rawSql": "SELECT NOW() AS time, ROUND(AVG(llm_latency_ms)) AS value FROM anomaly_alerts WHERE $__timeFilter(time) AND llm_latency_ms IS NOT NULL",
+        "format": "time_series"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "steps": [
+              { "color": "green",  "value": null },
+              { "color": "yellow", "value": 5000 },
+              { "color": "red",    "value": 15000 }
+            ]
+          }
+        }
+      }
+    },
+
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Explanations Done",
+      "gridPos": { "h": 4, "w": 4, "x": 16, "y": 0 },
+      "datasource": "TimescaleDB",
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{
+        "rawSql": "SELECT NOW() AS time, COUNT(*) AS value FROM anomaly_alerts WHERE $__timeFilter(time) AND explanation_status = 'done'",
+        "format": "time_series"
+      }],
+      "fieldConfig": {
+        "defaults": { "color": { "fixedColor": "green", "mode": "fixed" } }
+      }
+    },
+
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Pending Explanations",
+      "gridPos": { "h": 4, "w": 4, "x": 20, "y": 0 },
+      "datasource": "TimescaleDB",
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "targets": [{
+        "rawSql": "SELECT NOW() AS time, COUNT(*) AS value FROM anomaly_alerts WHERE explanation_status = 'pending'",
+        "format": "time_series"
+      }],
+      "fieldConfig": {
+        "defaults": { "color": { "fixedColor": "orange", "mode": "fixed" } }
+      }
+    },
+
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Temperature — All Machines",
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 4 },
+      "datasource": "TimescaleDB",
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [{
+        "rawSql": "SELECT time, value, machine_id AS metric FROM sensor_readings WHERE $__timeFilter(time) AND signal = 'temperature' ORDER BY time",
+        "format": "time_series"
+      }],
+      "fieldConfig": {
+        "defaults": { "unit": "celsius", "custom": { "lineWidth": 1 } }
+      }
+    },
+
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Vibration — All Machines",
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 4 },
+      "datasource": "TimescaleDB",
+      "options": { "tooltip": { "mode": "multi" } },
+      "targets": [{
+        "rawSql": "SELECT time, value, machine_id AS metric FROM sensor_readings WHERE $__timeFilter(time) AND signal = 'vibration' ORDER BY time",
+        "format": "time_series"
+      }],
+      "fieldConfig": {
+        "defaults": { "unit": "velocityms", "custom": { "lineWidth": 1 } }
+      }
+    },
+
+    {
+      "id": 12,
+      "type": "timeseries",
+      "title": "Anomalies per Minute",
+      "gridPos": { "h": 6, "w": 12, "x": 0, "y": 11 },
+      "datasource": "TimescaleDB",
+      "options": { "tooltip": { "mode": "single" } },
+      "targets": [{
+        "rawSql": "SELECT time_bucket('1 minute', time) AS time, COUNT(*) AS \"anomalies/min\" FROM anomaly_alerts WHERE $__timeFilter(time) GROUP BY 1 ORDER BY 1",
+        "format": "time_series"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "fixedColor": "red", "mode": "fixed" },
+          "custom": { "fillOpacity": 20 }
+        }
+      }
+    },
+
+    {
+      "id": 13,
+      "type": "piechart",
+      "title": "Anomaly Severity Distribution",
+      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 11 },
+      "datasource": "TimescaleDB",
+      "options": {
+        "pieType": "donut",
+        "legend": { "displayMode": "table", "placement": "right" },
+        "displayLabels": ["name", "percent"]
+      },
+      "targets": [{
+        "rawSql": "SELECT low_count AS \"low\", medium_count AS \"medium\", high_count AS \"high\", critical_count AS \"critical\" FROM (SELECT COUNT(*) FILTER (WHERE severity='low') AS low_count, COUNT(*) FILTER (WHERE severity='medium') AS medium_count, COUNT(*) FILTER (WHERE severity='high') AS high_count, COUNT(*) FILTER (WHERE severity='critical') AS critical_count FROM anomaly_alerts WHERE severity IS NOT NULL) s",
+        "format": "table"
+      }],
+      "fieldConfig": {
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "low" },      "properties": [{ "id": "color", "value": { "fixedColor": "#22C55E", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "medium" },   "properties": [{ "id": "color", "value": { "fixedColor": "#EAB308", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "high" },     "properties": [{ "id": "color", "value": { "fixedColor": "#F97316", "mode": "fixed" } }] },
+          { "matcher": { "id": "byName", "options": "critical" }, "properties": [{ "id": "color", "value": { "fixedColor": "#EF4444", "mode": "fixed" } }] }
+        ]
+      }
+    },
+
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "LLM Latency over Time (ms)",
+      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 11 },
+      "datasource": "TimescaleDB",
+      "options": { "tooltip": { "mode": "single" } },
+      "targets": [{
+        "rawSql": "SELECT time, llm_latency_ms AS \"latency_ms\" FROM anomaly_alerts WHERE $__timeFilter(time) AND llm_latency_ms IS NOT NULL ORDER BY time",
+        "format": "time_series"
+      }],
+      "fieldConfig": {
+        "defaults": { "unit": "ms", "color": { "fixedColor": "purple", "mode": "fixed" } }
+      }
+    },
+
+    {
+      "id": 20,
+      "type": "table",
+      "title": "Recent Anomaly Alerts with LLM Explanations",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 17 },
+      "datasource": "TimescaleDB",
+      "options": { "sortBy": [{ "displayName": "Time", "desc": true }] },
+      "targets": [{
+        "rawSql": "SELECT time, machine_id, machine_type, signal, ROUND(value::numeric, 3) AS value, ROUND(z_score::numeric, 2) AS z_score, is_injected, explanation_status, severity, ROUND(confidence::numeric, 2) AS confidence, probable_cause, recommended_action, llm_latency_ms FROM anomaly_alerts WHERE $__timeFilter(time) ORDER BY explanation_status ASC, time DESC LIMIT 100",
+        "format": "table"
+      }],
+      "fieldConfig": {
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "severity" },
+            "properties": [{
+              "id": "custom.displayMode", "value": "color-text"
+            }, {
+              "id": "mappings",
+              "value": [
+                { "type": "value", "options": { "low":      { "text": "LOW",      "color": "green"  } } },
+                { "type": "value", "options": { "medium":   { "text": "MEDIUM",   "color": "yellow" } } },
+                { "type": "value", "options": { "high":     { "text": "HIGH",     "color": "orange" } } },
+                { "type": "value", "options": { "critical": { "text": "CRITICAL", "color": "red"    } } }
+              ]
+            }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "is_injected" },
+            "properties": [{
+              "id": "mappings",
+              "value": [
+                { "type": "value", "options": { "true":  { "text": "TP", "color": "green" } } },
+                { "type": "value", "options": { "false": { "text": "FP", "color": "red"   } } }
+              ]
+            }]
+          }
+        ]
+      }
+    }
+
+  ],
+  "refresh": "10s",
+  "schemaVersion": 38,
+  "tags": ["iot", "anomaly-detection", "llm"],
+  "time": { "from": "now-30m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "ExplainIoT — Real-time IIoT Anomaly Detection",
+  "uid": "explainiot-main",
+  "version": 1
+}
