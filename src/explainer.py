@@ -49,10 +49,18 @@ def _build_user_prompt(
     alert: AnomalyAlert,
     recent_values: list[float],
 ) -> str:
-    params     = MACHINES[alert.machine_id]["signals"][alert.signal]
-    unit       = params["unit"]
-    normal_lo  = round(params["mean"] - 2 * params["std"], 3)
-    normal_hi  = round(params["mean"] + 2 * params["std"], 3)
+    machine_cfg = MACHINES.get(alert.machine_id, {})
+    signal_cfg  = machine_cfg.get("signals", {}).get(alert.signal, {})
+
+    if signal_cfg:
+        unit      = signal_cfg["unit"]
+        normal_lo = round(signal_cfg["mean"] - 2 * signal_cfg["std"], 3)
+        normal_hi = round(signal_cfg["mean"] + 2 * signal_cfg["std"], 3)
+    else:
+        # Unknown machine (e.g. SKAB) — derive normal range from window stats
+        unit      = "units"
+        normal_lo = round(alert.window_mean - 2 * alert.window_std, 3)
+        normal_hi = round(alert.window_mean + 2 * alert.window_std, 3)
     recent_str = ", ".join(f"{v:.3f}" for v in recent_values[-10:])
 
     # Direction of deviation — critical for accurate LLM diagnosis
